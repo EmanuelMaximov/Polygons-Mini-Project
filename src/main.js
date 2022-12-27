@@ -3,11 +3,20 @@ var pointCheck = false;
 var clickCheck = false;
 var newCoordCheck = false;
 var showCoordsCheck = true;
+var canvas_width = 500;
+var canvas_height = 500;
+var polygons_line_width = 5;
+var polygons_line_color = 'black';
 
 $(document).ready(function(){
 
-  var c = document.getElementById("graph").getContext('2d');
-  c.lineWidth = 3;
+  var ctx = document.getElementById("graph");
+  ctx.width = canvas_width;
+  ctx.height = canvas_height;
+  var c=ctx.getContext('2d');
+  c.lineWidth = polygons_line_width;
+  c.strokeStyle = polygons_line_color;
+
 
   $("#graph").mousemove(function(e) {
     x = undefined?e.layerX:e.offsetX;
@@ -103,10 +112,7 @@ $(document).ready(function(){
 
   $("#clear").click(function() {
     coords = [];
-    c.clearRect(0,0,760,640);
-    $("#area").html("Area of polygon: 0 units<sup>2</sup>");
-    $("#perimeter").text("Perimeter of polygon: 0 units");
-    $("#noCoords").text("Number of coordinates: 0");
+    c.clearRect(0,0,canvas_width,canvas_height);
   });
 
 
@@ -117,9 +123,32 @@ $(document).ready(function(){
       alert("Field must contain a image name.")
       return;
     }
-    $("#graph").css("background-image", "url(Images/" + String(Url_input) + ")");
+
+    var image = new Image();
+    image.onload = function () {
+      $("#my_image").attr("src", this.src);
+
+      // clear canvas
+      coords = [];
+      c.clearRect(0,0,canvas_width,canvas_height);
+
+      // insert new image to canvas
+      $("#graph").css("background-image", "url(Images/" + String(Url_input) + ")");
+
+      // adjust canvas dimensions
+      canvas_width = image.naturalWidth;
+      canvas_height = image.naturalHeight;
+      ctx.width = canvas_width;
+      ctx.height = canvas_height;
+      c.lineWidth = polygons_line_width;
+      c.strokeStyle = 'white';
+    };
+    image.src = "Images/" + String(Url_input);
+
+
     $("#Urlinput,#ImgUrl,#imgtext,#cancelimg").css("visibility","hidden");
     $("#imgbtn").css("visibility","visible");
+
   });
 
   $("#imgbtn").click(function() {
@@ -130,6 +159,7 @@ $(document).ready(function(){
     $("#Urlinput,#ImgUrl,#imgtext,#cancelimg").css("visibility","hidden");
     $("#imgbtn").css("visibility","visible");
   });
+
 
   // Display a cross for each co-ordinate and the numbers if required
   function displayCoord(a) {
@@ -153,7 +183,7 @@ $(document).ready(function(){
   }
 
   function drawPolygon() {
-    c.clearRect(0,0,760,640);
+    c.clearRect(0,0,canvas_width,canvas_height);
     for (var i = 0; i < coords.length; i++) {
       displayCoord(coords[i]);
       if (i == coords.length-1) {
@@ -164,6 +194,6 @@ $(document).ready(function(){
     }
   }
   function output(d) {
-    return 640-d;
+    return canvas_height-d;
   }
 });
