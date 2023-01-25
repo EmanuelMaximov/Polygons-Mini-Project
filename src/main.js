@@ -1,4 +1,6 @@
 var coords = [];
+var polygons=[];
+var current_polygon_index=-1;
 var pointCheck = false;
 var clickCheck = false;
 var newCoordCheck = false;
@@ -52,8 +54,8 @@ $(document).ready(function(){
       clickCheck = false;
       $("html, body").css("cursor","grab");
     } else if (newCoordCheck) {
-      coords.push([x]);
-      coords[coords.length-1].push(y);
+      coords.push([x,y]);
+      // coords[coords.length-1].push(y);
       $("#xCoord, #yCoord, #submit").css("visibility","hidden");
       drawPolygon();
       $("#noCoords").text("Number of co-ordinates: "+coords.length);
@@ -63,13 +65,32 @@ $(document).ready(function(){
 
   $("#graph").dblclick(function(e) {
     if (!pointCheck) {
-      coords.push([x]);
-      coords[coords.length-1].push(y);
+
+      coords.push([x,y]);
+      if (current_polygon_index==-1){
+        current_polygon_index++;
+        polygons.push(coords);
+      }
+      polygons[current_polygon_index]=coords;
+      // coords[coords.length-1].push(y);
       $("#xCoord, #yCoord, #submit").css("visibility","hidden");
+
       drawPolygon();
       $("#noCoords").text("Number of co-ordinates: "+coords.length);
     }
   });
+
+  // // edit polygon
+  // $("#graph").click(function(e) {
+  //   polygons[current_polygon_index]=coords;
+  //   var index=checkOnEdge([x,y],polygons);
+  //   if (index!=-1){
+  //
+  //     coords=polygons[index];
+  //   }
+  // });
+
+
 
   $("#showCoords").change(function() {
     if (this.checked) {
@@ -105,6 +126,13 @@ $(document).ready(function(){
     newCoordCheck = false;
   });
 
+  $("#add_polygon").click(function() {
+    if (current_polygon_index>0){
+      polygons.push(coords);
+    }
+    current_polygon_index++;
+    coords=[];
+  });
 
   $("#cancel").click(function() {
     $("#xCoord, #yCoord, #submit, #cancel").css("visibility","hidden");
@@ -112,6 +140,8 @@ $(document).ready(function(){
 
   $("#clear").click(function() {
     coords = [];
+    polygons=[];
+    current_polygon_index=-1;
     c.clearRect(0,0,canvas_width,canvas_height);
   });
 
@@ -134,14 +164,6 @@ $(document).ready(function(){
 
       // insert new image to canvas
       $("#graph").css("background-image", "url(Images/" + String(Url_input) + ")");
-
-      // adjust canvas dimensions
-      canvas_width = image.naturalWidth;
-      canvas_height = image.naturalHeight;
-      ctx.width = canvas_width;
-      ctx.height = canvas_height;
-      c.lineWidth = polygons_line_width;
-      c.strokeStyle = 'white';
     };
     image.src = "Images/" + String(Url_input);
 
@@ -161,6 +183,39 @@ $(document).ready(function(){
   });
 
 
+  function checkOnEdge(clicked_coord,polygons_coords){
+    for (var i = 0; i < polygons_coords.length; i++) {
+      for (var j = 1; i < polygons_coords[i].length; j++) {
+        if (checkOnLine(polygons_coords[i][0],polygons_coords[i][j],clicked_coord)) {
+            return i
+        }
+      }
+    }
+    return -1
+  }
+  function max(a,b){
+    if (a>b){
+      return a
+    }
+    return b
+  }
+
+  function min(a,b){
+    if (a<b){
+      return a
+    }
+    return b
+  }
+
+  function checkOnLine(a,b,clicked_coord) {
+    var m = (a[1] - b[1]) / (a[0] - b[0])
+    if ((clicked_coord[1] - a[1] == m * (clicked_coord[0] - a[0])) &&
+      (clicked_coord[0]>=min(a[0],b[0]) && clicked_coord[0]<=max(a[0],b[0])) &&
+      (clicked_coord[1]>=min(a[1],b[1]) && clicked_coord[1]<=max(a[1],b[1]))) {
+      return true
+    }
+    return false
+  }
   // Display a cross for each co-ordinate and the numbers if required
   function displayCoord(a) {
     c.beginPath();
@@ -184,12 +239,14 @@ $(document).ready(function(){
 
   function drawPolygon() {
     c.clearRect(0,0,canvas_width,canvas_height);
-    for (var i = 0; i < coords.length; i++) {
-      displayCoord(coords[i]);
-      if (i == coords.length-1) {
-        drawLine(coords[i],coords[0]);
-      } else {
-        drawLine(coords[i],coords[i+1]);
+    for (var j = 0; j < polygons.length; j++) {
+      for (var i = 0; i < polygons[j].length; i++) {
+        displayCoord(polygons[j][i]);
+        if (i == polygons[j].length-1) {
+          drawLine(polygons[j][i],polygons[j][0]);
+        } else {
+          drawLine(polygons[j][i],polygons[j][i+1]);
+        }
       }
     }
   }
