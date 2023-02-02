@@ -10,6 +10,16 @@ var canvas_height = 550;
 var img = new Image();
 var image_is_inserted=false;
 
+//zoom support
+var zoom_activated = false;
+var translatePos = {
+  x: canvas_width / 2,
+  y: canvas_height / 2
+};
+var zoomMouseDown = false;
+var zoom_startDragOffset ={};
+var scale = 1.0;
+
 
 $(document).ready(function(){
 
@@ -18,64 +28,118 @@ $(document).ready(function(){
   canv.height = canvas_height;
   var c=canv.getContext('2d');
 
+
+
   $("#graph").mousemove(function(e) {
     x = undefined?e.layerX:e.offsetX;
     y = output(undefined?e.layerY:e.offsetY);
 
-    if (clickCheck) {
-      coords[pointChange][0] = x;
-      coords[pointChange][1] = y;
+    //for zoom in
+    if (zoomMouseDown && zoom_activated) {
+      c.clearRect(0,0,canvas_width,canvas_height);
+      translatePos.x = e.clientX - zoom_startDragOffset.x;
+      translatePos.y = e.clientY - zoom_startDragOffset.y;
+      c.save();
+      c.translate(translatePos.x, translatePos.y);
+      c.scale(scale, scale);
       drawPolygon();
-    } else {
-      $("html, body").css("cursor","crosshair");
-      pointCheck = false;
-      for (var k = 0; k < coords.length; k++) {
-        if (x-5 <= coords[k][0] && x+5 >= coords[k][0] && y-5 <= coords[k][1] && y+5 >= coords[k][1]) {
-          $("html, body").css("cursor","grab");
-          pointCheck = true;
-          pointChange = k;
-          break;
+      c.restore();
+    }
+
+    else{
+      if (clickCheck) {
+        coords[pointChange][0] = x;
+        coords[pointChange][1] = y;
+        drawPolygon();
+      } else {
+        $("html, body").css("cursor","default");
+        pointCheck = false;
+        for (var k = 0; k < coords.length; k++) {
+          if (x-5 <= coords[k][0] && x+5 >= coords[k][0] && y-5 <= coords[k][1] && y+5 >= coords[k][1]) {
+            $("html, body").css("cursor","grab");
+            pointCheck = true;
+            pointChange = k;
+            break;
+          }
         }
       }
     }
   });
 
   $("#graph").mousedown(function(e) {
-    if (pointCheck) {
-      clickCheck = true;
-      $("html, body").css("cursor","grabbing");
+
+    //for zoom in
+    if (zoom_activated){
+      zoomMouseDown = true;
+      zoom_startDragOffset.x=  e.clientX - translatePos.x;
+      zoom_startDragOffset.y=  e.clientY - translatePos.y;
+    }
+    else{
+      if (pointCheck) {
+        clickCheck = true;
+        $("html, body").css("cursor","grabbing");
+      }
     }
   });
 
   $("#graph").mouseup(function(e) {
-    if (clickCheck) {
-      clickCheck = false;
-      $("html, body").css("cursor","grab");
-    } else if (newCoordCheck) {
-      coords.push([x,y]);
-      // coords[coords.length-1].push(y);
-      $("#xCoord, #yCoord, #submit").css("visibility","hidden");
-      drawPolygon();
-      $("#noCoords").text("Number of co-ordinates: "+coords.length);
-      newCoordCheck = false;
+
+    //for zoom in
+    if (zoom_activated){
+      zoomMouseDown = false;
+    }
+    else{
+      if (clickCheck) {
+        clickCheck = false;
+        $("html, body").css("cursor","grab");
+      } else if (newCoordCheck) {
+        coords.push([x,y]);
+        // coords[coords.length-1].push(y);
+        $("#xCoord, #yCoord, #submit").css("visibility","hidden");
+        drawPolygon();
+        $("#noCoords").text("Number of co-ordinates: "+coords.length);
+        newCoordCheck = false;
+      }
+    }
+  });
+
+  $("#graph").mouseover(function(e) {
+    //for zoom
+    if (zoom_activated){
+      zoomMouseDown = false;
+    }
+  });
+
+  $("#graph").mouseout(function(e) {
+    //for zoom
+    if (zoom_activated){
+      zoomMouseDown = false;
     }
   });
 
   $("#graph").dblclick(function(e) {
-    if (!pointCheck) {
 
-      coords.push([x,y]);
-      if (current_polygon_index==-1){
-        current_polygon_index++;
-        polygons.push(coords);
-      }
-      polygons[current_polygon_index]=coords;
-      // coords[coords.length-1].push(y);
-      $("#xCoord, #yCoord, #submit").css("visibility","hidden");
-
-      drawPolygon();
-      $("#noCoords").text("Number of co-ordinates: "+coords.length);
+    if (zoom_activated){
+      alert("Reset zoom mode in order to add nodes")
     }
+    else{
+      if (!pointCheck) {
+
+        coords.push([x,y]);
+        if (current_polygon_index==-1){
+          current_polygon_index++;
+          polygons.push(coords);
+        }
+        polygons[current_polygon_index]=coords;
+        // coords[coords.length-1].push(y);
+        $("#xCoord, #yCoord, #submit").css("visibility","hidden");
+
+        drawPolygon();
+        $("#noCoords").text("Number of co-ordinates: "+coords.length);
+      }
+    }
+
+
   });
 
   // // edit polygon
@@ -143,6 +207,9 @@ $(document).ready(function(){
     current_polygon_index=-1;
     image_is_inserted=false;
     c.clearRect(0,0,canvas_width,canvas_height);
+    document.getElementById('my-range').value = 0;
+    zoom_activated=false;
+    zoomMouseDown = false;
   });
 
   function load_image(){
@@ -184,15 +251,35 @@ $(document).ready(function(){
     $("#imgbtn").css("visibility","visible");
   });
 
+  $("#reset_zoom").click(function() {
+    document.getElementById('my-range').value = 0;
+    zoom_activated=false;
+    zoomMouseDown = false;
+    drawPolygon();
+  });
+
 
   //zoom option
   $("#my-range").on("change", function() {
-    var scale=$(this).val();
-    c.save();
-    c.translate(c.width / 2, c.height / 2);
-    c.scale(scale, scale);
-    drawPolygon();
-    c.restore();
+    const rangeInput = document.getElementById("my-range");
+    rangeInput.setAttribute("title", this.value);
+    c.clearRect(0,0,canvas_width,canvas_height);
+    scale=$(this).val();
+    if (scale!=1){
+      zoom_activated=true;
+      c.save();
+      c.translate(translatePos.x, translatePos.y);
+      c.scale(scale, scale);
+      drawPolygon();
+      c.restore();
+    }
+    else {
+      zoom_activated=false;
+      zoomMouseDown = false;
+      drawPolygon();
+    }
+
+
   });
 
 
@@ -202,6 +289,8 @@ $(document).ready(function(){
   });
 
   $("#my-pen-width").on("change", function() {
+    const pen_width = document.getElementById("my-pen-width");
+    pen_width.setAttribute("title", this.value);
     c.lineWidth = $(this).val();
   });
 
