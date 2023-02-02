@@ -23,7 +23,6 @@ body
 }
 
 
-
 #graph, #options {
   border: 3px solid black;
 }
@@ -32,6 +31,7 @@ body
 canvas {
   background-image: none;
   background-size: cover;
+  zoom: 100%;
 }
 
 
@@ -68,9 +68,9 @@ canvas {
 #box
 {
   border: 2px solid black;
-  padding: 50px;
-  width: 230px;
-  height: 450px;
+  padding: 30px;
+  width: 280px;
+  height: 600px;
 }
 
 #showCoords
@@ -78,7 +78,32 @@ canvas {
   display: inline-block;
 }
 
+
+
 #showCoords_text
 {
   display: inline-block;
+}
+
+.slider {
+  /* Use flexbox for slider wrapper element */
+  display:flex;
+  /* Direct alignment of content along horizontal axis */
+  flex-direction:row;
+  /* Tell's flexbox to center content around the non-horizontal axis (ie around the vertical axis) */
+  align-items:center;
+}
+
+.slider-label {
+  width:30px;
+}
+
+.slider-input {
+  /* Causes the input element to horizontally stretch to fill in available horizontal space */
+  flex:1;
+  width: 200px;
+}
+
+.slider-value {
+  width: 30px;
 }

@@ -5,20 +5,18 @@ var pointCheck = false;
 var clickCheck = false;
 var newCoordCheck = false;
 var showCoordsCheck = true;
-var canvas_width = 500;
-var canvas_height = 500;
-var polygons_line_width = 5;
-var polygons_line_color = 'black';
+var canvas_width = 550;
+var canvas_height = 550;
+var img = new Image();
+var image_is_inserted=false;
+
 
 $(document).ready(function(){
 
-  var ctx = document.getElementById("graph");
-  ctx.width = canvas_width;
-  ctx.height = canvas_height;
-  var c=ctx.getContext('2d');
-  c.lineWidth = polygons_line_width;
-  c.strokeStyle = polygons_line_color;
-
+  var canv = document.getElementById("graph");
+  canv.width = canvas_width;
+  canv.height = canvas_height;
+  var c=canv.getContext('2d');
 
   $("#graph").mousemove(function(e) {
     x = undefined?e.layerX:e.offsetX;
@@ -84,8 +82,9 @@ $(document).ready(function(){
   // $("#graph").click(function(e) {
   //   polygons[current_polygon_index]=coords;
   //   var index=checkOnEdge([x,y],polygons);
-  //   if (index!=-1){
   //
+  //   if (index!=-1){
+  //     alert(index)
   //     coords=polygons[index];
   //   }
   // });
@@ -142,9 +141,22 @@ $(document).ready(function(){
     coords = [];
     polygons=[];
     current_polygon_index=-1;
+    image_is_inserted=false;
     c.clearRect(0,0,canvas_width,canvas_height);
   });
 
+  function load_image(){
+    image_is_inserted=true;
+    // insert new image to canvas
+    var hRatio = canvas_width / img.width    ;
+    var vRatio =  canvas_height / img.height  ;
+    var ratio  = Math.min ( hRatio, vRatio );
+    var centerShift_x = ( canvas_width - img.width*ratio ) / 2;
+    var centerShift_y = ( canvas_height - img.height*ratio ) / 2;
+    c.clearRect(0,0,canvas_width,canvas_height);
+    c.drawImage(img, 0,0, img.width, img.height,
+      centerShift_x,centerShift_y,img.width*ratio, img.height*ratio);
+  }
 
   $("#ImgUrl").click(function() {
     var Url_input = $("#Urlinput").val();
@@ -153,20 +165,10 @@ $(document).ready(function(){
       alert("Field must contain a image name.")
       return;
     }
-
-    var image = new Image();
-    image.onload = function () {
-      $("#my_image").attr("src", this.src);
-
-      // clear canvas
-      coords = [];
-      c.clearRect(0,0,canvas_width,canvas_height);
-
-      // insert new image to canvas
-      $("#graph").css("background-image", "url(Images/" + String(Url_input) + ")");
-    };
-    image.src = "Images/" + String(Url_input);
-
+    img.onload = load_image;
+    coords = [];
+    polygons[current_polygon_index]=coords;
+    img.src = "Images/" + String(Url_input);
 
     $("#Urlinput,#ImgUrl,#imgtext,#cancelimg").css("visibility","hidden");
     $("#imgbtn").css("visibility","visible");
@@ -183,6 +185,26 @@ $(document).ready(function(){
   });
 
 
+  //zoom option
+  $("#my-range").on("change", function() {
+    var scale=$(this).val();
+    c.save();
+    c.translate(c.width / 2, c.height / 2);
+    c.scale(scale, scale);
+    drawPolygon();
+    c.restore();
+  });
+
+
+  //pen color option
+  $("#my-pen-color").on("change", function() {
+    c.strokeStyle = $(this).val();
+  });
+
+  $("#my-pen-width").on("change", function() {
+    c.lineWidth = $(this).val();
+  });
+
   function checkOnEdge(clicked_coord,polygons_coords){
     for (var i = 0; i < polygons_coords.length; i++) {
       for (var j = 1; i < polygons_coords[i].length; j++) {
@@ -193,25 +215,12 @@ $(document).ready(function(){
     }
     return -1
   }
-  function max(a,b){
-    if (a>b){
-      return a
-    }
-    return b
-  }
-
-  function min(a,b){
-    if (a<b){
-      return a
-    }
-    return b
-  }
 
   function checkOnLine(a,b,clicked_coord) {
     var m = (a[1] - b[1]) / (a[0] - b[0])
     if ((clicked_coord[1] - a[1] == m * (clicked_coord[0] - a[0])) &&
-      (clicked_coord[0]>=min(a[0],b[0]) && clicked_coord[0]<=max(a[0],b[0])) &&
-      (clicked_coord[1]>=min(a[1],b[1]) && clicked_coord[1]<=max(a[1],b[1]))) {
+      (clicked_coord[0]>=Math.min(a[0],b[0]) && clicked_coord[0]<=Math.max(a[0],b[0])) &&
+      (clicked_coord[1]>=Math.min(a[1],b[1]) && clicked_coord[1]<=Math.max(a[1],b[1]))) {
       return true
     }
     return false
@@ -239,6 +248,9 @@ $(document).ready(function(){
 
   function drawPolygon() {
     c.clearRect(0,0,canvas_width,canvas_height);
+    if (image_is_inserted){
+      load_image();
+    }
     for (var j = 0; j < polygons.length; j++) {
       for (var i = 0; i < polygons[j].length; i++) {
         displayCoord(polygons[j][i]);
@@ -253,4 +265,6 @@ $(document).ready(function(){
   function output(d) {
     return canvas_height-d;
   }
+
+
 });
