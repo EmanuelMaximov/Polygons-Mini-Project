@@ -12,32 +12,31 @@
 <canvas id="graph">Your browser does not support the HTML5 canvas tag.</canvas>
 
 <div id="box">
-  <h2>Polygons</h2>
-  <h5>By Emanuel Maximov & Guy Edvabsky </h5>
+  <h1>Polygons</h1>
+  <h5>Emanuel Maximov & Guy Edvabsky </h5>
 <!--  <h5>Double-click inside the box to the left to create some co-ordinates!</h5>-->
 
   <div class="group">
     <h3>Options</h3>
     <div><div id="showCoords_text">Show co-ordinates</div><input id="showCoords" type="checkbox" checked></input></div>
     <button class="option" id="clear">Clear screen</button>
-    <button class="option" id="newCoord">Create new coordinate</button>
-    <input class="option" id="xCoord" placeholder="x" type="number"></input>
-    <input class="option" id="yCoord" placeholder="y" type="number"></input>
-    <button class="option" id="submit">OK</button>
-    <button class="option" id="cancel">Cancel</button>
+<!--    <button class="option" id="newCoord">Create new coordinate</button>-->
+<!--    <input class="option" id="xCoord" placeholder="x" type="number"></input>-->
+<!--    <input class="option" id="yCoord" placeholder="y" type="number"></input>-->
+<!--    <button class="option" id="submit">OK</button>-->
+<!--    <button class="option" id="cancel">Cancel</button>-->
 
     <button class="option" id="add_polygon">Add Polygon</button>
-    <button class="option" id="imgbtn">Change Background Image</button>
-    <div><div id="imgtext">Enter Background Image name</div></div>
-    <input class="option" id="Urlinput" placeholder="canvas.jpg" type="text"></input>
-    <button class="option" id="ImgUrl">Ok</button>
-    <button class="option" id="cancelimg">Cancel</button>
+    <br>
+    <span >Add background Image</span>
+    <input class="option" type="file" id="inputFile">
+    <br>
 
 
-    <span >Line Color</span>
+    <span >Edge Color</span>
     <input class="option" id="my-pen-color" type="color" />
 
-    <span >Line Width</span>
+    <span >Edge Width</span>
     <div class="slider">
       <span class="slider-label">1px</span>
       <input id="my-pen-width" class="slider-input" type="range" value="0" step="1" min="1" max="10" title="Move the slider to change the value"/>
@@ -50,7 +49,11 @@
       <input id="my-range" class="slider-input" type="range" value="0" step=".05" min="1" max="2" title="Move the slider to change the value"/>
       <span class="slider-value">x2</span>
     </div>
+
+
     <button class="option" id="reset_zoom">Reset Zoom</button>
+
+    <button class="option" id="export_json">Export to JSON</button>
 
 
   </div>

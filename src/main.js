@@ -5,8 +5,8 @@ var pointCheck = false;
 var clickCheck = false;
 var newCoordCheck = false;
 var showCoordsCheck = true;
-var canvas_width = 550;
-var canvas_height = 550;
+var canvas_width = 840;
+var canvas_height = 560;
 var img = new Image();
 var image_is_inserted=false;
 
@@ -225,31 +225,8 @@ $(document).ready(function(){
       centerShift_x,centerShift_y,img.width*ratio, img.height*ratio);
   }
 
-  $("#ImgUrl").click(function() {
-    var Url_input = $("#Urlinput").val();
-    if (Url_input == "")
-    {
-      alert("Field must contain a image name.")
-      return;
-    }
-    img.onload = load_image;
-    coords = [];
-    polygons[current_polygon_index]=coords;
-    img.src = "Images/" + String(Url_input);
 
-    $("#Urlinput,#ImgUrl,#imgtext,#cancelimg").css("visibility","hidden");
-    $("#imgbtn").css("visibility","visible");
 
-  });
-
-  $("#imgbtn").click(function() {
-    $("#imgbtn").css("visibility","hidden");
-    $("#Urlinput,#ImgUrl,#imgtext,#cancelimg").css("visibility","visible");
-  });
-  $("#cancelimg").click(function() {
-    $("#Urlinput,#ImgUrl,#imgtext,#cancelimg").css("visibility","hidden");
-    $("#imgbtn").css("visibility","visible");
-  });
 
   $("#reset_zoom").click(function() {
     document.getElementById('my-range').value = 0;
@@ -292,6 +269,39 @@ $(document).ready(function(){
     const pen_width = document.getElementById("my-pen-width");
     pen_width.setAttribute("title", this.value);
     c.lineWidth = $(this).val();
+  });
+
+  $("#inputFile").on("change", function(e) {
+    var f = e.target.files[0];
+    var fr = new FileReader();
+
+    fr.onload = function(ev2) {
+      console.dir(ev2);
+
+      img.onload = load_image;
+      img.src = ev2.target.result;
+      coords = [];
+      polygons[current_polygon_index]=coords;
+
+    };
+
+    fr.readAsDataURL(f);
+
+  });
+
+
+  $("#export_json").click(function() {
+    const originalData = JSON.parse(JSON.stringify(polygons));
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(originalData, null, 2)], {
+      type: "application/json"
+    }));
+    a.setAttribute("download", "Polygons data.json");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    alert("Polygons data was exported to JSON file successfully!")
   });
 
   function checkOnEdge(clicked_coord,polygons_coords){
