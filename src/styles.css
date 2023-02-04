@@ -28,11 +28,7 @@ body
 }
 
 
-canvas {
-  background-image: none;
-  background-size: cover;
-  zoom: 100%;
-}
+
 
 
 #options {
@@ -40,7 +36,7 @@ canvas {
   background-color: #DBFAFC;
 }
 
-#xCoord, #yCoord, #submit, #cancel,#Urlinput,#ImgUrl,#imgtext,#cancelimg {
+#xCoord, #yCoord, #submit, #cancel{
   visibility: hidden;
 }
 
