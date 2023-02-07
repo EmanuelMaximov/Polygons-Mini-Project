@@ -36,7 +36,7 @@ body
   background-color: #DBFAFC;
 }
 
-#xCoord, #yCoord, #submit, #cancel{
+#xCoord, #yCoord, #submit, #cancel,#remove_node,#change_node_color{
   visibility: hidden;
 }
 

@@ -1,5 +1,7 @@
 var coords = [];
 var polygons=[];
+var pushed_first_element=false;
+var color_pen='black';
 var current_polygon_index=-1;
 var pointCheck = false;
 var clickCheck = false;
@@ -19,6 +21,9 @@ var translatePos = {
 var zoomMouseDown = false;
 var zoom_startDragOffset ={};
 var scale = 1.0;
+
+var edit_mode=false;
+var clicked_nodes=[];
 
 
 $(document).ready(function(){
@@ -93,8 +98,7 @@ $(document).ready(function(){
         clickCheck = false;
         $("html, body").css("cursor","grab");
       } else if (newCoordCheck) {
-        coords.push([x,y]);
-        // coords[coords.length-1].push(y);
+        coords.push([x,y,color_pen]);
         $("#xCoord, #yCoord, #submit").css("visibility","hidden");
         drawPolygon();
         $("#noCoords").text("Number of co-ordinates: "+coords.length);
@@ -125,10 +129,11 @@ $(document).ready(function(){
     else{
       if (!pointCheck) {
 
-        coords.push([x,y]);
-        if (current_polygon_index==-1){
+        coords.push([x,y,color_pen]);
+        if (!pushed_first_element){
           current_polygon_index++;
           polygons.push(coords);
+          pushed_first_element=true;
         }
         polygons[current_polygon_index]=coords;
         // coords[coords.length-1].push(y);
@@ -142,16 +147,83 @@ $(document).ready(function(){
 
   });
 
-  // // edit polygon
-  // $("#graph").click(function(e) {
-  //   polygons[current_polygon_index]=coords;
-  //   var index=checkOnEdge([x,y],polygons);
-  //
-  //   if (index!=-1){
-  //     alert(index)
-  //     coords=polygons[index];
-  //   }
-  // });
+  function drawDashedLine(b,d) {
+    var line_width=c.lineWidth;
+    c.lineWidth=line_width+3;
+    c.setLineDash([10, 10]);
+    c.beginPath();
+    c.moveTo(parseInt(b[0],10),output(parseInt(b[1],10)));
+    c.lineTo(parseInt(d[0],10),output(parseInt(d[1],10)));
+    c.stroke();
+    c.lineWidth=line_width;
+    c.setLineDash([]);
+  }
+
+  function drawDashedPolygon() {
+    for (var i = 0; i < coords.length; i++) {
+      if (i == coords.length - 1) {
+        drawDashedLine(coords[i], coords[0]);
+      } else {
+        drawDashedLine(coords[i], coords[i + 1]);
+      }
+    }
+  }
+
+
+
+  $("#remove_node").on('click', function(e){
+    $("#remove_node, #change_node_color").css("visibility","hidden");
+    var new_coords=[];
+    for (var i=0; i<coords.length;i++){
+      if (clicked_nodes.indexOf(i) === -1){
+        new_coords.push(coords[i]);
+      }
+    }
+    coords=new_coords;
+    clicked_nodes=[];
+
+    polygons[current_polygon_index]=coords;
+
+    drawPolygon();
+  });
+
+  // remove nodes on edit mode
+  $("#graph").on('click', function(e){
+    const x = e.offsetX;
+    const y = canvas_height-e.offsetY;
+   if (edit_mode){
+
+     for (var k = 0; k < coords.length; k++) {
+       if (x-5 <= coords[k][0] && x+5 >= coords[k][0] && y-5 <= coords[k][1] && y+5 >= coords[k][1]) {
+         clicked_nodes.push(k);
+         $("#remove_node, #change_node_color").css("visibility","visible");
+         var fillstyle=c.fillStyle;
+         c.fillStyle='red';
+         // c.lineWidth=c.lineWidth+5;
+         c.fillRect(coords[k][0]-5,output(coords[k][1])-5,10,10);
+         c.stroke();
+         c.fillStyle=fillstyle;
+         break;
+       }
+     }
+   }
+  });
+
+  // edit polygon
+  $("#graph").on('contextmenu', function(e){
+    e.preventDefault();
+    polygons[current_polygon_index]=coords;
+    const x = e.offsetX;
+    const y = canvas_height-e.offsetY;
+    var index=checkOnEdge([x,y]);
+    if (index!=-1){
+      edit_mode=true;
+      current_polygon_index=index;
+      coords=polygons[index];
+      polygons[current_polygon_index]=coords;
+      drawPolygon();
+    }
+  });
 
 
 
@@ -190,10 +262,13 @@ $(document).ready(function(){
   });
 
   $("#add_polygon").click(function() {
-    if (current_polygon_index>0){
+    if (!pushed_first_element){
       polygons.push(coords);
     }
-    current_polygon_index++;
+    else{
+      pushed_first_element=true;
+    }
+    current_polygon_index=polygons.length;
     coords=[];
   });
 
@@ -210,6 +285,7 @@ $(document).ready(function(){
     document.getElementById('my-range').value = 0;
     zoom_activated=false;
     zoomMouseDown = false;
+    edit_mode=false;
   });
 
   function load_image(){
@@ -262,7 +338,7 @@ $(document).ready(function(){
 
   //pen color option
   $("#my-pen-color").on("change", function() {
-    c.strokeStyle = $(this).val();
+    color_pen = $(this).val();
   });
 
   $("#my-pen-width").on("change", function() {
@@ -304,26 +380,40 @@ $(document).ready(function(){
     alert("Polygons data was exported to JSON file successfully!")
   });
 
-  function checkOnEdge(clicked_coord,polygons_coords){
-    for (var i = 0; i < polygons_coords.length; i++) {
-      for (var j = 1; i < polygons_coords[i].length; j++) {
-        if (checkOnLine(polygons_coords[i][0],polygons_coords[i][j],clicked_coord)) {
+  function checkOnEdge(clicked_coord){
+    for (var i = 0; i < polygons.length; i++) {
+      for (var j = 0; j < polygons[i].length-1; j++) {
+        if (checkOnLine(polygons[i][j],polygons[i][j+1],clicked_coord)) {
             return i
         }
+      }
+      // check first and last coords of the same polygon
+      if (checkOnLine(polygons[i][0],polygons[i][polygons[i].length-1],clicked_coord)) {
+        return i
       }
     }
     return -1
   }
 
   function checkOnLine(a,b,clicked_coord) {
-    var m = (a[1] - b[1]) / (a[0] - b[0])
-    if ((clicked_coord[1] - a[1] == m * (clicked_coord[0] - a[0])) &&
-      (clicked_coord[0]>=Math.min(a[0],b[0]) && clicked_coord[0]<=Math.max(a[0],b[0])) &&
-      (clicked_coord[1]>=Math.min(a[1],b[1]) && clicked_coord[1]<=Math.max(a[1],b[1]))) {
+    const threshold = 25;
+
+    // Calculate the distance between the mouse click position and the line
+    const A = b[0]-a[0];
+    const B = a[1]-clicked_coord[1];
+    const C = a[0] - clicked_coord[0];
+    const D = b[1] - a[1];
+    const dist = Math.abs(A * B - C * D) / Math.sqrt(A * A + D * D);
+
+    if (dist <= threshold &&
+      (clicked_coord[0]>=Math.min(a[0],b[0])-threshold && clicked_coord[0]<=Math.max(a[0],b[0])+threshold) &&
+      (clicked_coord[1]>=Math.min(a[1],b[1])-threshold && clicked_coord[1]<=Math.max(a[1],b[1])+threshold)){
       return true
     }
     return false
   }
+
+
   // Display a cross for each co-ordinate and the numbers if required
   function displayCoord(a) {
     c.beginPath();
@@ -342,6 +432,7 @@ $(document).ready(function(){
     c.beginPath();
     c.moveTo(parseInt(b[0],10),output(parseInt(b[1],10)));
     c.lineTo(parseInt(d[0],10),output(parseInt(d[1],10)));
+
     c.stroke();
   }
 
@@ -354,12 +445,16 @@ $(document).ready(function(){
       for (var i = 0; i < polygons[j].length; i++) {
         displayCoord(polygons[j][i]);
         if (i == polygons[j].length-1) {
+          c.strokeStyle=polygons[j][i][2];
           drawLine(polygons[j][i],polygons[j][0]);
         } else {
+          c.strokeStyle=polygons[j][i+1][2];
           drawLine(polygons[j][i],polygons[j][i+1]);
         }
       }
     }
+    drawDashedPolygon();
+
   }
   function output(d) {
     return canvas_height-d;
