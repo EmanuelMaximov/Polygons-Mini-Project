@@ -22,8 +22,13 @@ var zoomMouseDown = false;
 var zoom_startDragOffset ={};
 var scale = 1.0;
 
-var edit_mode=false;
+var edit_mode=true;
 var clicked_nodes=[];
+var select_nodes=false;
+
+var drag_offset=[0,0];
+var drag_start=[0,0];
+var drag_polygon=false;
 
 
 $(document).ready(function(){
@@ -40,24 +45,53 @@ $(document).ready(function(){
     y = output(undefined?e.layerY:e.offsetY);
 
     //for zoom in
-    if (zoomMouseDown && zoom_activated) {
-      c.clearRect(0,0,canvas_width,canvas_height);
-      translatePos.x = e.clientX - zoom_startDragOffset.x;
-      translatePos.y = e.clientY - zoom_startDragOffset.y;
-      c.save();
-      c.translate(translatePos.x, translatePos.y);
-      c.scale(scale, scale);
-      drawPolygon();
-      c.restore();
-    }
+    if (zoom_activated) {
+      if (zoomMouseDown) {
+        c.clearRect(0, 0, canvas_width, canvas_height);
+        translatePos.x = e.clientX - zoom_startDragOffset.x;
+        translatePos.y = e.clientY - zoom_startDragOffset.y;
+        c.save();
+        c.translate(translatePos.x, translatePos.y);
+        c.scale(scale, scale);
+        drawPolygon();
+        c.restore();
+      }
+    } else {
+      $("html, body").css("cursor","default");
+      if (edit_mode){
+        const x = e.offsetX;
+        const y = canvas_height-e.offsetY;
+        var index=checkOnEdge([x,y],true);
+        if (index!=-1){
+          $("html, body").css("cursor","move");
+          if (drag_polygon & !clickCheck){
+            // get the current mouse position
+            var mx=e.clientX-drag_offset[0];
+            var my=output(e.clientY)-drag_offset[1];
+            // calculate the distance the mouse has moved
+            // since the last mousemove
+            var dx=mx-drag_start[0];
+            var dy=my-drag_start[1];
 
-    else{
+            for (var k = 0; k < coords.length; k++) {
+              coords[k][0] += dx;
+              coords[k][1] += dy;
+            }
+            drawPolygon();
+            drag_start[0]=mx;
+            drag_start[1]=my;
+          }
+        }
+      }
+
       if (clickCheck) {
         coords[pointChange][0] = x;
         coords[pointChange][1] = y;
         drawPolygon();
       } else {
-        $("html, body").css("cursor","default");
+        // if (!edit_mode){
+        //   $("html, body").css("cursor","default");
+        // }
         pointCheck = false;
         for (var k = 0; k < coords.length; k++) {
           if (x-5 <= coords[k][0] && x+5 >= coords[k][0] && y-5 <= coords[k][1] && y+5 >= coords[k][1]) {
@@ -68,10 +102,20 @@ $(document).ready(function(){
           }
         }
       }
+
     }
+
+
+
   });
 
   $("#graph").mousedown(function(e) {
+    if (edit_mode){
+      drag_polygon=true;
+      //get current mouse position
+      drag_start[0]=e.clientX-drag_offset[0];
+      drag_start[1]=output(e.clientY)-drag_offset[1];
+    }
 
     //for zoom in
     if (zoom_activated){
@@ -88,7 +132,7 @@ $(document).ready(function(){
   });
 
   $("#graph").mouseup(function(e) {
-
+    drag_polygon=false;
     //for zoom in
     if (zoom_activated){
       zoomMouseDown = false;
@@ -169,10 +213,22 @@ $(document).ready(function(){
     }
   }
 
+  function drawRects() {
+    drawPolygon();
+    var fillstyle=c.fillStyle;
+    c.fillStyle='red';
+    for (var k = 0; k < clicked_nodes.length; k++) {
+      c.fillRect(coords[clicked_nodes[k]][0]-5,output(coords[clicked_nodes[k]][1])-5,10,10);
+      c.stroke();
+
+    }
+    c.fillStyle=fillstyle;
+  }
+
 
 
   $("#remove_node").on('click', function(e){
-    $("#remove_node, #change_node_color").css("visibility","hidden");
+
     var new_coords=[];
     for (var i=0; i<coords.length;i++){
       if (clicked_nodes.indexOf(i) === -1){
@@ -181,9 +237,41 @@ $(document).ready(function(){
     }
     coords=new_coords;
     clicked_nodes=[];
+    select_nodes=false;
+    $("#remove_node, #change_node_color").css("visibility","hidden");
 
-    polygons[current_polygon_index]=coords;
 
+
+
+    if (coords.length==0) {
+      if (polygons.length > 1) {
+        polygons.splice(current_polygon_index, 1);
+      }
+      else{
+        polygons[0]=coords;
+      }
+      current_polygon_index = 0;
+      coords = polygons[current_polygon_index];
+    }
+      polygons[current_polygon_index]=coords;
+
+
+
+    drawPolygon();
+
+  });
+
+
+
+  $("#select_nodes").click(function() {
+    select_nodes=true;
+  });
+
+
+  $("#cancel_select_nodes").on('click', function(e){
+    $("#remove_node, #change_node_color").css("visibility","hidden");
+    select_nodes=false;
+    clicked_nodes=[];
     drawPolygon();
   });
 
@@ -191,18 +279,27 @@ $(document).ready(function(){
   $("#graph").on('click', function(e){
     const x = e.offsetX;
     const y = canvas_height-e.offsetY;
-   if (edit_mode){
+   if (edit_mode && select_nodes){
 
      for (var k = 0; k < coords.length; k++) {
        if (x-5 <= coords[k][0] && x+5 >= coords[k][0] && y-5 <= coords[k][1] && y+5 >= coords[k][1]) {
-         clicked_nodes.push(k);
-         $("#remove_node, #change_node_color").css("visibility","visible");
-         var fillstyle=c.fillStyle;
-         c.fillStyle='red';
-         // c.lineWidth=c.lineWidth+5;
-         c.fillRect(coords[k][0]-5,output(coords[k][1])-5,10,10);
-         c.stroke();
-         c.fillStyle=fillstyle;
+
+         const ind=clicked_nodes.indexOf(k);
+         if (ind === -1){
+           clicked_nodes.push(k);
+         }
+         else{
+           clicked_nodes.splice(ind,1);
+         }
+
+         if (clicked_nodes.length==0){
+           $("#remove_node, #change_node_color").css("visibility","hidden");
+         }
+         else{
+           $("#remove_node, #change_node_color").css("visibility","visible");
+         }
+
+         drawRects();
          break;
        }
      }
@@ -215,7 +312,7 @@ $(document).ready(function(){
     polygons[current_polygon_index]=coords;
     const x = e.offsetX;
     const y = canvas_height-e.offsetY;
-    var index=checkOnEdge([x,y]);
+    var index=checkOnEdge([x,y],false);
     if (index!=-1){
       edit_mode=true;
       current_polygon_index=index;
@@ -380,34 +477,59 @@ $(document).ready(function(){
     alert("Polygons data was exported to JSON file successfully!")
   });
 
-  function checkOnEdge(clicked_coord){
+  function checkOnEdge(clicked_coord,flag){
     for (var i = 0; i < polygons.length; i++) {
       for (var j = 0; j < polygons[i].length-1; j++) {
-        if (checkOnLine(polygons[i][j],polygons[i][j+1],clicked_coord)) {
+        if (checkOnLine(polygons[i][j],polygons[i][j+1],clicked_coord,flag)) {
             return i
         }
       }
       // check first and last coords of the same polygon
-      if (checkOnLine(polygons[i][0],polygons[i][polygons[i].length-1],clicked_coord)) {
+      if (checkOnLine(polygons[i][0],polygons[i][polygons[i].length-1],clicked_coord,flag)) {
         return i
       }
     }
     return -1
   }
 
-  function checkOnLine(a,b,clicked_coord) {
-    const threshold = 25;
+  function checkOnLine(a,b,clicked_coord,flag) {
+    var threshold = 25;
+    var ax=a[0];
+    var ay=a[1];
+    var bx=b[0];
+    var by=b[1];
 
+    if (flag){
+      // var distance = Math.sqrt(Math.pow((ax-bx),2)+Math.pow((ay-by),2));
+      // threshold=5;
+      var thresh=5;
+      if (Math.min(ax,bx)==ax){
+        ax=ax+thresh;
+        bx=bx-thresh;
+      }
+      else{
+        ax=ax-thresh;
+        bx=bx+thresh;
+      }
+      if (Math.min(ay,by)==ay){
+        ay=ay+thresh;
+        by=by-thresh;
+      }
+      else{
+        ay=ay-thresh;
+        by=by+thresh;
+      }
+    }
     // Calculate the distance between the mouse click position and the line
-    const A = b[0]-a[0];
-    const B = a[1]-clicked_coord[1];
-    const C = a[0] - clicked_coord[0];
-    const D = b[1] - a[1];
+    const A = bx-ax;
+    const B = ay-clicked_coord[1];
+    const C = ax - clicked_coord[0];
+    const D = by - ay;
     const dist = Math.abs(A * B - C * D) / Math.sqrt(A * A + D * D);
 
     if (dist <= threshold &&
-      (clicked_coord[0]>=Math.min(a[0],b[0])-threshold && clicked_coord[0]<=Math.max(a[0],b[0])+threshold) &&
-      (clicked_coord[1]>=Math.min(a[1],b[1])-threshold && clicked_coord[1]<=Math.max(a[1],b[1])+threshold)){
+      (clicked_coord[0]>=Math.min(ax,bx)-threshold && clicked_coord[0]<=Math.max(ax,bx)+threshold) &&
+      (clicked_coord[1]>=Math.min(ay,by)-threshold && clicked_coord[1]<=Math.max(ay,by)+threshold)){
       return true
     }
     return false
