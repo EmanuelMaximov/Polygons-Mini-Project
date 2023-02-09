@@ -1,42 +1,44 @@
-var coords = [];
-var polygons=[];
-var pushed_first_element=false;
-var color_pen='black';
-var current_polygon_index=-1;
-var pointCheck = false;
-var clickCheck = false;
-var newCoordCheck = false;
-var showCoordsCheck = true;
-var canvas_width = 840;
-var canvas_height = 560;
-var img = new Image();
-var image_is_inserted=false;
+let canvas_width = 750;
+let canvas_height = 450;
 
-//zoom support
-var zoom_activated = false;
-var translatePos = {
-  x: canvas_width / 2,
-  y: canvas_height / 2
-};
-var zoomMouseDown = false;
-var zoom_startDragOffset ={};
-var scale = 1.0;
+let polygons=[];
+let polygons_line_width=[];
+let current_polygon_index=-1;
+let coords = [];
+let color_pen='black';
+let edge_width=2;
 
-var edit_mode=true;
-var clicked_nodes=[];
-var select_nodes=false;
+//Global Flags
+let added_polygon=false;
+let pointCheck = false;
+let clickCheck = false;
+let showCoordsCheck = true;
 
-var drag_offset=[0,0];
-var drag_start=[0,0];
-var drag_polygon=false;
+//Image Loading Support
+let img = new Image();
+let image_is_inserted=false;
+//Zoom support
+let zoom_activated = false;
+let zoomMouseDown = false;
+let translatePos = {x: 0, y: 0};
+let zoom_startDragOffset ={x: 0, y: 0};
+let scale = 1.0;
+//Editing support
+let edit_mode=true;
+let clicked_nodes=[];
+let select_nodes=false;
+let drag_start=[0,0];
+let drag_polygon=false;
 
 
 $(document).ready(function(){
 
-  var canv = document.getElementById("graph");
-  canv.width = canvas_width;
-  canv.height = canvas_height;
-  var c=canv.getContext('2d');
+  //Get Canvas instance
+  let canvas = document.getElementById("graph");
+  //Set canvas width and height
+  canvas.width = canvas_width;
+  canvas.height = canvas_height;
+  let c=canvas.getContext('2d');
 
 
 
@@ -53,7 +55,7 @@ $(document).ready(function(){
         c.save();
         c.translate(translatePos.x, translatePos.y);
         c.scale(scale, scale);
-        drawPolygon();
+        drawPolygons();
         c.restore();
       }
     } else {
@@ -61,23 +63,24 @@ $(document).ready(function(){
       if (edit_mode){
         const x = e.offsetX;
         const y = canvas_height-e.offsetY;
-        var index=checkOnEdge([x,y],true);
-        if (index!=-1){
+        let index=checkOnEdge([x,y],true);
+        if (index!=-1 && index==current_polygon_index){
           $("html, body").css("cursor","move");
-          if (drag_polygon & !clickCheck){
+          if (drag_polygon && !clickCheck){
             // get the current mouse position
-            var mx=e.clientX-drag_offset[0];
-            var my=output(e.clientY)-drag_offset[1];
+            let mx=e.clientX;
+            let my=output(e.clientY);
             // calculate the distance the mouse has moved
             // since the last mousemove
-            var dx=mx-drag_start[0];
-            var dy=my-drag_start[1];
+            let dx=mx-drag_start[0];
+            let dy=my-drag_start[1];
 
-            for (var k = 0; k < coords.length; k++) {
+            for (let k = 0; k < coords.length; k++) {
               coords[k][0] += dx;
               coords[k][1] += dy;
             }
-            drawPolygon();
+            drawPolygons();
+            //update starting position
             drag_start[0]=mx;
             drag_start[1]=my;
           }
@@ -87,13 +90,10 @@ $(document).ready(function(){
       if (clickCheck) {
         coords[pointChange][0] = x;
         coords[pointChange][1] = y;
-        drawPolygon();
+        drawPolygons();
       } else {
-        // if (!edit_mode){
-        //   $("html, body").css("cursor","default");
-        // }
         pointCheck = false;
-        for (var k = 0; k < coords.length; k++) {
+        for (let k = 0; k < coords.length; k++) {
           if (x-5 <= coords[k][0] && x+5 >= coords[k][0] && y-5 <= coords[k][1] && y+5 >= coords[k][1]) {
             $("html, body").css("cursor","grab");
             pointCheck = true;
@@ -113,8 +113,8 @@ $(document).ready(function(){
     if (edit_mode){
       drag_polygon=true;
       //get current mouse position
-      drag_start[0]=e.clientX-drag_offset[0];
-      drag_start[1]=output(e.clientY)-drag_offset[1];
+      drag_start[0]=e.clientX;
+      drag_start[1]=output(e.clientY);
     }
 
     //for zoom in
@@ -141,17 +141,12 @@ $(document).ready(function(){
       if (clickCheck) {
         clickCheck = false;
         $("html, body").css("cursor","grab");
-      } else if (newCoordCheck) {
-        coords.push([x,y,color_pen]);
-        $("#xCoord, #yCoord, #submit").css("visibility","hidden");
-        drawPolygon();
-        $("#noCoords").text("Number of co-ordinates: "+coords.length);
-        newCoordCheck = false;
       }
     }
   });
 
   $("#graph").mouseover(function(e) {
+    drag_polygon=false;
     //for zoom
     if (zoom_activated){
       zoomMouseDown = false;
@@ -159,6 +154,7 @@ $(document).ready(function(){
   });
 
   $("#graph").mouseout(function(e) {
+    drag_polygon=false;
     //for zoom
     if (zoom_activated){
       zoomMouseDown = false;
@@ -171,53 +167,21 @@ $(document).ready(function(){
       alert("Reset zoom mode in order to add nodes")
     }
     else{
-      if (!pointCheck) {
-
+      if (!pointCheck & added_polygon) {
         coords.push([x,y,color_pen]);
-        if (!pushed_first_element){
-          current_polygon_index++;
-          polygons.push(coords);
-          pushed_first_element=true;
-        }
         polygons[current_polygon_index]=coords;
-        // coords[coords.length-1].push(y);
-        $("#xCoord, #yCoord, #submit").css("visibility","hidden");
-
-        drawPolygon();
-        $("#noCoords").text("Number of co-ordinates: "+coords.length);
+        drawPolygons();
       }
     }
 
 
   });
 
-  function drawDashedLine(b,d) {
-    var line_width=c.lineWidth;
-    c.lineWidth=line_width+3;
-    c.setLineDash([10, 10]);
-    c.beginPath();
-    c.moveTo(parseInt(b[0],10),output(parseInt(b[1],10)));
-    c.lineTo(parseInt(d[0],10),output(parseInt(d[1],10)));
-    c.stroke();
-    c.lineWidth=line_width;
-    c.setLineDash([]);
-  }
-
-  function drawDashedPolygon() {
-    for (var i = 0; i < coords.length; i++) {
-      if (i == coords.length - 1) {
-        drawDashedLine(coords[i], coords[0]);
-      } else {
-        drawDashedLine(coords[i], coords[i + 1]);
-      }
-    }
-  }
-
   function drawRects() {
-    drawPolygon();
-    var fillstyle=c.fillStyle;
+    drawPolygons();
+    let fillstyle=c.fillStyle;
     c.fillStyle='red';
-    for (var k = 0; k < clicked_nodes.length; k++) {
+    for (let k = 0; k < clicked_nodes.length; k++) {
       c.fillRect(coords[clicked_nodes[k]][0]-5,output(coords[clicked_nodes[k]][1])-5,10,10);
       c.stroke();
 
@@ -229,8 +193,8 @@ $(document).ready(function(){
 
   $("#remove_node").on('click', function(e){
 
-    var new_coords=[];
-    for (var i=0; i<coords.length;i++){
+    let new_coords=[];
+    for (let i=0; i<coords.length;i++){
       if (clicked_nodes.indexOf(i) === -1){
         new_coords.push(coords[i]);
       }
@@ -257,7 +221,7 @@ $(document).ready(function(){
 
 
 
-    drawPolygon();
+    drawPolygons();
 
   });
 
@@ -272,7 +236,7 @@ $(document).ready(function(){
     $("#remove_node, #change_node_color").css("visibility","hidden");
     select_nodes=false;
     clicked_nodes=[];
-    drawPolygon();
+    drawPolygons();
   });
 
   // remove nodes on edit mode
@@ -281,7 +245,7 @@ $(document).ready(function(){
     const y = canvas_height-e.offsetY;
    if (edit_mode && select_nodes){
 
-     for (var k = 0; k < coords.length; k++) {
+     for (let k = 0; k < coords.length; k++) {
        if (x-5 <= coords[k][0] && x+5 >= coords[k][0] && y-5 <= coords[k][1] && y+5 >= coords[k][1]) {
 
          const ind=clicked_nodes.indexOf(k);
@@ -312,66 +276,59 @@ $(document).ready(function(){
     polygons[current_polygon_index]=coords;
     const x = e.offsetX;
     const y = canvas_height-e.offsetY;
-    var index=checkOnEdge([x,y],false);
+    let index=checkOnEdge([x,y],false);
     if (index!=-1){
       edit_mode=true;
       current_polygon_index=index;
       coords=polygons[index];
       polygons[current_polygon_index]=coords;
-      drawPolygon();
+      drawPolygons();
     }
   });
 
 
-
+  // ---------------------------------------- Buttons ----------------------------------------
   $("#showCoords").change(function() {
     if (this.checked) {
       showCoordsCheck = true;
     } else {
       showCoordsCheck = false;
     }
-    drawPolygon();
+    drawPolygons();
   });
 
-  $("#newCoord").click(function() {
-    $("#xCoord, #yCoord, #submit, #cancel").css("visibility","visible");
-    newCoordCheck = true;
-  });
 
-  $("#submit").click(function() {
-    var x_coord = $("#xCoord").val();
-    var y_coord = $("#yCoord").val();
 
-    if (x_coord == "" || y_coord == "")
-    {
-      alert("Fields must contain a number.")
-      return;
-    }
-
-    coords.push([$("#xCoord").val()]);
-    coords[coords.length-1].push($("#yCoord").val());
-    $("#xCoord, #yCoord, #submit, #cancel").css("visibility","hidden");
-    drawPolygon();
-    $("#noCoords").text("Number of coordinates: "+coords.length);
-    $("#xCoord").val("");
-    $("#yCoord").val("");
-    newCoordCheck = false;
-  });
 
   $("#add_polygon").click(function() {
-    if (!pushed_first_element){
+    added_polygon=true;
+    if (coords.length!=0 || polygons.length==0){
+      coords=[];
       polygons.push(coords);
+      polygons_line_width.push(edge_width);
+      current_polygon_index=polygons.length-1;
     }
-    else{
-      pushed_first_element=true;
-    }
-    current_polygon_index=polygons.length;
-    coords=[];
+
+
+
   });
 
-  $("#cancel").click(function() {
-    $("#xCoord, #yCoord, #submit, #cancel").css("visibility","hidden");
+  $("#delete_polygon").click(function() {
+    coords=[];
+    if (polygons.length > 1) {
+      polygons.splice(current_polygon_index, 1);
+    }
+    else{
+      polygons[0]=coords;
+    }
+    current_polygon_index = 0;
+    coords = polygons[current_polygon_index];
+
+    polygons[current_polygon_index]=coords;
+    drawPolygons();
   });
+
+
 
   $("#clear").click(function() {
     coords = [];
@@ -388,11 +345,11 @@ $(document).ready(function(){
   function load_image(){
     image_is_inserted=true;
     // insert new image to canvas
-    var hRatio = canvas_width / img.width    ;
-    var vRatio =  canvas_height / img.height  ;
-    var ratio  = Math.min ( hRatio, vRatio );
-    var centerShift_x = ( canvas_width - img.width*ratio ) / 2;
-    var centerShift_y = ( canvas_height - img.height*ratio ) / 2;
+    let hRatio = canvas_width / img.width    ;
+    let vRatio =  canvas_height / img.height  ;
+    let ratio  = Math.min ( hRatio, vRatio );
+    let centerShift_x = ( canvas_width - img.width*ratio ) / 2;
+    let centerShift_y = ( canvas_height - img.height*ratio ) / 2;
     c.clearRect(0,0,canvas_width,canvas_height);
     c.drawImage(img, 0,0, img.width, img.height,
       centerShift_x,centerShift_y,img.width*ratio, img.height*ratio);
@@ -405,7 +362,7 @@ $(document).ready(function(){
     document.getElementById('my-range').value = 0;
     zoom_activated=false;
     zoomMouseDown = false;
-    drawPolygon();
+    drawPolygons();
   });
 
 
@@ -420,13 +377,13 @@ $(document).ready(function(){
       c.save();
       c.translate(translatePos.x, translatePos.y);
       c.scale(scale, scale);
-      drawPolygon();
+      drawPolygons();
       c.restore();
     }
     else {
       zoom_activated=false;
       zoomMouseDown = false;
-      drawPolygon();
+      drawPolygons();
     }
 
 
@@ -441,12 +398,28 @@ $(document).ready(function(){
   $("#my-pen-width").on("change", function() {
     const pen_width = document.getElementById("my-pen-width");
     pen_width.setAttribute("title", this.value);
-    c.lineWidth = $(this).val();
+    edge_width = $(this).val();
+
+  });
+
+  $("#Change_color").on("click", function() {
+    let new_color=color_pen;
+    for (let i = 0; i < coords.length; i++) {
+      coords[i][2]=new_color;
+    }
+    polygons[current_polygon_index]=coords;
+    drawPolygons();
+
+  });
+  $("#Change_width").on("click", function() {
+    polygons_line_width[current_polygon_index]=edge_width;
+    drawPolygons();
+
   });
 
   $("#inputFile").on("change", function(e) {
-    var f = e.target.files[0];
-    var fr = new FileReader();
+    let f = e.target.files[0];
+    let fr = new FileReader();
 
     fr.onload = function(ev2) {
       console.dir(ev2);
@@ -477,9 +450,49 @@ $(document).ready(function(){
     alert("Polygons data was exported to JSON file successfully!")
   });
 
+
+  // ---------------------------------------- Auxiliary functions ----------------------------------------
+
+  // makes origin in bottom left
+  function output(d) {
+    return canvas_height-d;
+  }
+  // draws the dashed bounding rect around the polygon
+  function drawBoundingRect() {
+    let top=[0,0];
+    let bottom=[0,canvas_height];
+    let most_right=[0,0];
+    let most_left=[canvas_width,0];
+    for (let i = 0; i < coords.length; i++) {
+      if (coords[i][1]>top[1]){
+        top=coords[i];
+      }
+      if (coords[i][1]<bottom[1]){
+        bottom=coords[i];
+      }
+      if (coords[i][0]>most_right[0]){
+        most_right=coords[i];
+      }
+      if (coords[i][0]<most_left[0]){
+        most_left=coords[i];
+      }
+    }
+    c.save();
+    c.strokeStyle='black';
+    c.lineWidth=2;
+    c.setLineDash([10, 5]);
+    c.strokeRect(most_left[0], output(bottom[1]), most_right[0]-most_left[0], output(top[1])-output(bottom[1]));
+    c.restore();
+  }
+
+
+
+
+
+
   function checkOnEdge(clicked_coord,flag){
-    for (var i = 0; i < polygons.length; i++) {
-      for (var j = 0; j < polygons[i].length-1; j++) {
+    for (let i = 0; i < polygons.length; i++) {
+      for (let j = 0; j < polygons[i].length-1; j++) {
         if (checkOnLine(polygons[i][j],polygons[i][j+1],clicked_coord,flag)) {
             return i
         }
@@ -493,16 +506,14 @@ $(document).ready(function(){
   }
 
   function checkOnLine(a,b,clicked_coord,flag) {
-    var threshold = 25;
-    var ax=a[0];
-    var ay=a[1];
-    var bx=b[0];
-    var by=b[1];
+    let threshold = 25;
+    let ax=a[0];
+    let ay=a[1];
+    let bx=b[0];
+    let by=b[1];
 
     if (flag){
-      // var distance = Math.sqrt(Math.pow((ax-bx),2)+Math.pow((ay-by),2));
-      // threshold=5;
-      var thresh=5;
+      let thresh=5;
       if (Math.min(ax,bx)==ax){
         ax=ax+thresh;
         bx=bx-thresh;
@@ -558,13 +569,14 @@ $(document).ready(function(){
     c.stroke();
   }
 
-  function drawPolygon() {
+  function drawPolygons() {
     c.clearRect(0,0,canvas_width,canvas_height);
     if (image_is_inserted){
       load_image();
     }
-    for (var j = 0; j < polygons.length; j++) {
-      for (var i = 0; i < polygons[j].length; i++) {
+    for (let j = 0; j < polygons.length; j++) {
+      c.lineWidth=polygons_line_width[j];
+      for (let i = 0; i < polygons[j].length; i++) {
         displayCoord(polygons[j][i]);
         if (i == polygons[j].length-1) {
           c.strokeStyle=polygons[j][i][2];
@@ -575,12 +587,13 @@ $(document).ready(function(){
         }
       }
     }
-    drawDashedPolygon();
+    drawBoundingRect();
 
   }
-  function output(d) {
-    return canvas_height-d;
-  }
+
+
+
+
 
 
 });

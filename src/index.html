@@ -9,61 +9,82 @@
 </head>
 
 <body>
-<canvas id="graph">Your browser does not support the HTML5 canvas tag.</canvas>
+
+
+
+<div class="canvas-container">
+  <div class="instructions">
+    <span style="color: #eeeeee">Double-click: Create new node</span>
+    <br>
+    <span style="color: #eeeeee">Right-click: Choose the polygon to work on</span>
+  </div>
+  <div class="mode">
+    <br>
+    <span style="color: #eeeeee">View-Mode</span>
+  </div>
+  <div class="sep"></div>
+  <canvas id="graph">Your browser does not support the HTML5 canvas tag.</canvas>
+
+  <div class="sep"></div>
+
+  <div class="credits">
+    <span style="font-size: 50px;font-family:georgia;color: #eeeeee">Polygons</span>
+    <span style="color: #eeeeee">Emanuel Maximov & Guy Edvabsky </span>
+  </div>
+
+  <div class="slider">
+      <span style="color: #eeeeee";>Zoom</span>
+    <br>
+      <span class="slider-label">x1</span>
+      <input id="my-range" class="slider-input" type="range" value="0" step=".05" min="1" max="2" title="Move the slider to change the value"/>
+      <span class="slider-label">x2</span>
+    <br>
+      <button id="reset_zoom"  class="slider-input">Reset Zoom</button>
+  </div>
+</div>
+
+
+
+
+
+
 
 <div id="box">
-  <h1>Polygons</h1>
-  <h5>Emanuel Maximov & Guy Edvabsky </h5>
-<!--  <h5>Double-click inside the box to the left to create some co-ordinates!</h5>-->
-
   <div class="group">
-    <h3>Options</h3>
-    <button class="option" id="export_json">Export to JSON</button>
+    <span style="font-size: 35px;font-family:georgia;font-weight: normal;">Options</span>
     <br>
-    <div><div id="showCoords_text">Show co-ordinates</div><input id="showCoords" type="checkbox" checked></input></div>
-    <button class="option" id="clear">Clear screen</button>
 
-<!--    <button class="option" id="newCoord">Create new coordinate</button>-->
-<!--    <input class="option" id="xCoord" placeholder="x" type="number"></input>-->
-<!--    <input class="option" id="yCoord" placeholder="y" type="number"></input>-->
-<!--    <button class="option" id="submit">OK</button>-->
-<!--    <button class="option" id="cancel">Cancel</button>-->
 
-    <button class="option" id="add_polygon">Add Polygon</button>
-    <br>
-    <button class="option" id="select_nodes">Select node(s)</button>
-    <button class="option" id="cancel_select_nodes">Cancel node(s) Selection</button>
-    <button class="option" id="remove_node">Remove node(s)</button>
-    <button class="option" id="change_node_color">Change node(s) color</button>
-    <br>
     <span >Add background Image</span>
     <input class="option" type="file" id="inputFile">
-    <br>
+    <div class="line-1"></div>
+    <div id="showCoords_text">Show co-ordinates<input id="showCoords" type="checkbox" checked></div>
+    <button class="option" id="clear_pol">Clear polygons</button>
+    <button class="option" id="clear">Clear screen</button>
+    <div class="line-1"></div>
 
+
+    <button class="option" id="add_polygon">Add Polygon</button>
+    <button class="option" id="delete_polygon">Delete Polygon</button>
+    <div class="line-1"></div>
+    <button class="option" id="select_nodes">Select nodes</button>
+    <button class="option" id="cancel_select_nodes">Cancel Selection</button>
+    <button class="option" id="remove_node">Remove nodes</button>
+    <div class="line-1"></div>
 
     <span >Edge Color</span>
     <input class="option" id="my-pen-color" type="color" />
 
     <span >Edge Width</span>
-    <div class="slider">
-      <span class="slider-label">1px</span>
-      <input id="my-pen-width" class="slider-input" type="range" value="0" step="1" min="1" max="10" title="Move the slider to change the value"/>
-      <span class="slider-value">10px</span>
+    <div class="slider1">
+      <span class="slider-label1">1px</span>
+      <input id="my-pen-width" class="slider-input1" type="range" value="0" step="1" min="1" max="7" title="Move the slider to change the value"/>
+      <span class="slider-label1">7px</span>
     </div>
-
-    <span >Zoom</span>
-    <div class="slider">
-      <span class="slider-label">x1</span>
-      <input id="my-range" class="slider-input" type="range" value="0" step=".05" min="1" max="2" title="Move the slider to change the value"/>
-      <span class="slider-value">x2</span>
-    </div>
-
-
-    <button class="option" id="reset_zoom">Reset Zoom</button>
-
-
-
-
+    <button class="option" id="Change_color">Change color</button>
+    <button class="option" id="Change_width">Change width</button>
+    <div class="line-1"></div>
+    <button class="option" id="export_json">Export to JSON</button>
   </div>
 </div>
 </body>

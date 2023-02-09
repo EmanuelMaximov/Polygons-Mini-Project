@@ -9,6 +9,8 @@ html, body
   height: 100%;
   margin: 0px;
   padding: 0px;
+  background-image: url(https://wallpapercrafter.com/desktop/17018-polygon-triangles-geometric-gradient-lines-4k.jpg);
+  background-size: cover;
 }
 
 body
@@ -17,18 +19,14 @@ body
   align-items: center;
   justify-content: center;
   user-select: none;
-  background-color: #FAF9F6;
-  font-family: Calibri, "Arial", serif;
+  font-family: Calibri, Arial, serif;
   text-align: center;
 }
 
 
 #graph, #options {
-  border: 3px solid black;
+  border: 2px solid white;
 }
-
-
-
 
 
 #options {
@@ -36,7 +34,7 @@ body
   background-color: #DBFAFC;
 }
 
-#xCoord, #yCoord, #submit, #cancel,#remove_node,#change_node_color{
+#remove_node{
   visibility: hidden;
 }
 
@@ -49,55 +47,94 @@ body
 {
   display: flex;
   flex-direction: column;
-  padding: 20px;
   border: 3px solid black;
   border-radius: 5px;
   align-items: center;
   justify-content: center;
+  padding: 5px;
+ background: #ffffff;
+  font-weight: bold;
 }
 
 .option
 {
-  width: 200px;
+  width: 190px;
+  padding: 2px;
 }
 
 #box
 {
-  border: 0px;
-  padding: 30px;
+  padding: 5px;
 }
 
 #showCoords
 {
   display: inline-block;
+  flex-direction: row;
 }
 
-
-
-#showCoords_text
-{
-  display: inline-block;
+.canvas-container {
+  display: flex;
+  flex-direction: row;
+  display:block;
 }
 
+.instructions {
+  float: left;
+  text-align: left;
+  text-shadow: 1px 1px 1px #000;
+}
+.mode {
+  float: right;
+  text-align: right;
+  text-shadow: 1px 1px 1px #000;
+}
+
+/*zoom slider*/
 .slider {
-  /* Use flexbox for slider wrapper element */
-  display:flex;
-  /* Direct alignment of content along horizontal axis */
-  flex-direction:row;
-  /* Tell's flexbox to center content around the non-horizontal axis (ie around the vertical axis) */
-  align-items:center;
+  float: right;
 }
 
 .slider-label {
-  width:30px;
+  color: #eeeeee;
 }
 
 .slider-input {
-  /* Causes the input element to horizontally stretch to fill in available horizontal space */
-  flex:1;
-  width: 200px;
+  width: 220px;
 }
 
-.slider-value {
-  width: 30px;
+.sep {
+  clear: both;
 }
+
+.credits {
+  float: left;
+}
+
+/*edge width slider*/
+.slider1 {
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+}
+
+.slider-input1 {
+  flex:1;
+  width: 170px;
+}
+
+.slider-label1 {
+  width: 30px;
+  font-weight: normal;
+}
+
+
+.line-1 {
+  height: 2px;
+  width: 210px;
+  background: midnightblue;
+  margin: 10px;
+}
+
+
+
