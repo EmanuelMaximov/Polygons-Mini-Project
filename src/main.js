@@ -13,7 +13,6 @@ let added_polygon=false;
 let pointCheck = false;
 let clickCheck = false;
 let showCoordsCheck = true;
-
 //Image Loading Support
 let img = new Image();
 let image_is_inserted=false;
@@ -24,7 +23,7 @@ let translatePos = {x: 0, y: 0};
 let zoom_startDragOffset ={x: 0, y: 0};
 let scale = 1.0;
 //Editing support
-let edit_mode=true;
+let edit_mode=false;
 let clicked_nodes=[];
 let select_nodes=false;
 let drag_start=[0,0];
@@ -41,6 +40,7 @@ $(document).ready(function(){
   let c=canvas.getContext('2d');
 
 
+  // ---------------------------------------- Events Listeners ----------------------------------------
 
   $("#graph").mousemove(function(e) {
     x = undefined?e.layerX:e.offsetX;
@@ -102,11 +102,7 @@ $(document).ready(function(){
           }
         }
       }
-
     }
-
-
-
   });
 
   $("#graph").mousedown(function(e) {
@@ -164,7 +160,7 @@ $(document).ready(function(){
   $("#graph").dblclick(function(e) {
 
     if (zoom_activated){
-      alert("Reset zoom mode in order to add nodes")
+      alert("view-mode: Reset zoom in order to add nodes")
     }
     else{
       if (!pointCheck & added_polygon) {
@@ -174,69 +170,6 @@ $(document).ready(function(){
       }
     }
 
-
-  });
-
-  function drawRects() {
-    drawPolygons();
-    let fillstyle=c.fillStyle;
-    c.fillStyle='red';
-    for (let k = 0; k < clicked_nodes.length; k++) {
-      c.fillRect(coords[clicked_nodes[k]][0]-5,output(coords[clicked_nodes[k]][1])-5,10,10);
-      c.stroke();
-
-    }
-    c.fillStyle=fillstyle;
-  }
-
-
-
-  $("#remove_node").on('click', function(e){
-
-    let new_coords=[];
-    for (let i=0; i<coords.length;i++){
-      if (clicked_nodes.indexOf(i) === -1){
-        new_coords.push(coords[i]);
-      }
-    }
-    coords=new_coords;
-    clicked_nodes=[];
-    select_nodes=false;
-    $("#remove_node, #change_node_color").css("visibility","hidden");
-
-
-
-
-    if (coords.length==0) {
-      if (polygons.length > 1) {
-        polygons.splice(current_polygon_index, 1);
-      }
-      else{
-        polygons[0]=coords;
-      }
-      current_polygon_index = 0;
-      coords = polygons[current_polygon_index];
-    }
-      polygons[current_polygon_index]=coords;
-
-
-
-    drawPolygons();
-
-  });
-
-
-
-  $("#select_nodes").click(function() {
-    select_nodes=true;
-  });
-
-
-  $("#cancel_select_nodes").on('click', function(e){
-    $("#remove_node, #change_node_color").css("visibility","hidden");
-    select_nodes=false;
-    clicked_nodes=[];
-    drawPolygons();
   });
 
   // remove nodes on edit mode
@@ -257,10 +190,10 @@ $(document).ready(function(){
          }
 
          if (clicked_nodes.length==0){
-           $("#remove_node, #change_node_color").css("visibility","hidden");
+           $("#remove_node").css("visibility","hidden");
          }
          else{
-           $("#remove_node, #change_node_color").css("visibility","visible");
+           $("#remove_node").css("visibility","visible");
          }
 
          drawRects();
@@ -288,75 +221,128 @@ $(document).ready(function(){
 
 
   // ---------------------------------------- Buttons ----------------------------------------
+
+  // Load Image file button
+  $("#inputFile").on("change", function(e) {
+    let f = e.target.files[0];
+    let fr = new FileReader();
+
+    fr.onload = function(ev2) {
+      console.dir(ev2);
+      // calls the function to load image on load
+      resetAll();
+      img.onload = load_image;
+      img.src = ev2.target.result;
+    };
+    fr.readAsDataURL(f);
+
+  });
+
+  // Show Co-ordinates check box
   $("#showCoords").change(function() {
-    if (this.checked) {
-      showCoordsCheck = true;
-    } else {
-      showCoordsCheck = false;
-    }
+    showCoordsCheck = this.checked;
     drawPolygons();
   });
 
-
-
-
-  $("#add_polygon").click(function() {
-    added_polygon=true;
-    if (coords.length!=0 || polygons.length==0){
-      coords=[];
-      polygons.push(coords);
-      polygons_line_width.push(edge_width);
-      current_polygon_index=polygons.length-1;
-    }
-
-
-
-  });
-
-  $("#delete_polygon").click(function() {
-    coords=[];
-    if (polygons.length > 1) {
-      polygons.splice(current_polygon_index, 1);
-    }
-    else{
-      polygons[0]=coords;
-    }
-    current_polygon_index = 0;
-    coords = polygons[current_polygon_index];
-
-    polygons[current_polygon_index]=coords;
+  // Clear Polygons only
+  $("#clear_pol").click(function() {
+    resetAll();
     drawPolygons();
   });
 
-
-
-  $("#clear").click(function() {
-    coords = [];
-    polygons=[];
-    current_polygon_index=-1;
+  // Clear screen including Polygons and Image
+  $("#clear_screen").click(function() {
+    resetAll();
+    c.clearRect(0,0,canvas_width,canvas_height);
+    img = new Image();
     image_is_inserted=false;
-    c.clearRect(0,0,canvas_width,canvas_height);
-    document.getElementById('my-range').value = 0;
-    zoom_activated=false;
-    zoomMouseDown = false;
-    edit_mode=false;
+    //reset input file to "file not chosen"
+    $('#inputFile').val('');
   });
 
-  function load_image(){
-    image_is_inserted=true;
-    // insert new image to canvas
-    let hRatio = canvas_width / img.width    ;
-    let vRatio =  canvas_height / img.height  ;
-    let ratio  = Math.min ( hRatio, vRatio );
-    let centerShift_x = ( canvas_width - img.width*ratio ) / 2;
-    let centerShift_y = ( canvas_height - img.height*ratio ) / 2;
-    c.clearRect(0,0,canvas_width,canvas_height);
-    c.drawImage(img, 0,0, img.width, img.height,
-      centerShift_x,centerShift_y,img.width*ratio, img.height*ratio);
-  }
+
+  // add polygon
+  $("#add_polygon").click(function() {
+    if (!select_nodes){
+      //update for first inserted polygon
+      added_polygon=true;
+      edit_mode=true;
+      //push previous co-ordinates only if it's not empty or if it's the first polygon
+      if (coords.length!=0 || polygons.length==0){
+        coords=[];
+        polygons.push(coords);
+        polygons_line_width.push(edge_width);
+        current_polygon_index=polygons.length-1;
+      }
+    }
+  });
+
+  // delete polygon
+  $("#delete_polygon").click(function() {
+    if (!select_nodes){
+      //remove polygon from polygons array
+      polygons.splice(current_polygon_index, 1);
+
+      // after removing move back to the first polygon
+      if (polygons.length > 0) {
+        current_polygon_index = 0;
+        coords = polygons[current_polygon_index];
+      }
+      else{
+        resetAll();
+      }
+      drawPolygons();
+    }
+
+  });
+
+  // Select nodes button for removal
+  $("#select_nodes").click(function() {
+    select_nodes=true;
+  });
+
+  // Cancel Nodes selection button
+  $("#cancel_select_nodes").on('click', function(e){
+    $("#remove_node").css("visibility","hidden");
+    select_nodes=false;
+    clicked_nodes=[];
+    drawPolygons();
+  });
+
+  // TODO: HERE
+  $("#remove_node").on('click', function(e){
+
+    let new_coords=[];
+    for (let i=0; i<coords.length;i++){
+      if (clicked_nodes.indexOf(i) === -1){
+        new_coords.push(coords[i]);
+      }
+    }
+    coords=new_coords;
+    clicked_nodes=[];
+    select_nodes=false;
+    $("#remove_node").css("visibility","hidden");
 
 
 
+
+    if (coords.length==0) {
+      if (polygons.length > 1) {
+        polygons.splice(current_polygon_index, 1);
+      }
+      else{
+        polygons[0]=coords;
+      }
+      current_polygon_index = 0;
+      coords = polygons[current_polygon_index];
+    }
+    polygons[current_polygon_index]=coords;
+
+
+
+    drawPolygons();
+
+  });
 
   $("#reset_zoom").click(function() {
     document.getElementById('my-range').value = 0;
@@ -417,25 +403,9 @@ $(document).ready(function(){
 
   });
 
-  $("#inputFile").on("change", function(e) {
-    let f = e.target.files[0];
-    let fr = new FileReader();
-
-    fr.onload = function(ev2) {
-      console.dir(ev2);
-
-      img.onload = load_image;
-      img.src = ev2.target.result;
-      coords = [];
-      polygons[current_polygon_index]=coords;
-
-    };
-
-    fr.readAsDataURL(f);
-
-  });
 
 
+  // exports polygons array into JSON file
   $("#export_json").click(function() {
     const originalData = JSON.parse(JSON.stringify(polygons));
     const a = document.createElement("a");
@@ -450,9 +420,48 @@ $(document).ready(function(){
     alert("Polygons data was exported to JSON file successfully!")
   });
 
-
   // ---------------------------------------- Auxiliary functions ----------------------------------------
 
+  // reset all flags and Polygons array
+  function resetAll(){
+    document.getElementById('my-range').value = 0;
+    document.getElementById('my-pen-width').value = 0;
+    polygons=[];
+    polygons_line_width=[];
+    current_polygon_index=-1;
+    coords = [];
+    color_pen='black';
+    edge_width=2;
+
+    added_polygon=false;
+    pointCheck = false;
+    clickCheck = false;
+    showCoordsCheck = true;
+
+    zoom_activated = false;
+    zoomMouseDown = false;
+    translatePos = {x: 0, y: 0};
+    zoom_startDragOffset ={x: 0, y: 0};
+    scale = 1.0;
+
+    edit_mode=false;
+    clicked_nodes=[];
+    select_nodes=false;
+    drag_start=[0,0];
+    drag_polygon=false;
+  }
+  // callback function to load image into canvas in the right proportion
+  function load_image(){
+    image_is_inserted=true;
+    let hRatio = canvas_width / img.width    ;
+    let vRatio =  canvas_height / img.height  ;
+    let ratio  = Math.min ( hRatio, vRatio );
+    let centerShift_x = ( canvas_width - img.width*ratio ) / 2;
+    let centerShift_y = ( canvas_height - img.height*ratio ) / 2;
+    c.clearRect(0,0,canvas_width,canvas_height);
+    c.drawImage(img, 0,0, img.width, img.height,
+      centerShift_x,centerShift_y,img.width*ratio, img.height*ratio);
+  }
   // makes origin in bottom left
   function output(d) {
     return canvas_height-d;
@@ -485,9 +494,17 @@ $(document).ready(function(){
     c.restore();
   }
 
-
-
-
+  // Draw Rects around selected nodes for removal
+  function drawRects() {
+    drawPolygons();
+    c.save();
+    c.fillStyle='red';
+    for (let k = 0; k < clicked_nodes.length; k++) {
+      c.fillRect(coords[clicked_nodes[k]][0]-6,output(coords[clicked_nodes[k]][1])-6,12,12);
+      c.stroke();
+    }
+    c.restore();
+  }
 
 
   function checkOnEdge(clicked_coord,flag){
@@ -497,7 +514,7 @@ $(document).ready(function(){
             return i
         }
       }
-      // check first and last coords of the same polygon
+      // check first and last coords of the polygon (private case of the above)
       if (checkOnLine(polygons[i][0],polygons[i][polygons[i].length-1],clicked_coord,flag)) {
         return i
       }
@@ -587,13 +604,9 @@ $(document).ready(function(){
         }
       }
     }
-    drawBoundingRect();
+    if (edit_mode){
+      drawBoundingRect();
+    }
 
   }
-
-
-
-
-
-
 });
