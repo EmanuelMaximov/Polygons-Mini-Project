@@ -172,7 +172,7 @@ $(document).ready(function(){
 
   });
 
-  // remove nodes on edit mode
+  // select nodes on edit mode
   $("#graph").on('click', function(e){
     const x = e.offsetX;
     const y = canvas_height-e.offsetY;
@@ -309,10 +309,10 @@ $(document).ready(function(){
     drawPolygons();
   });
 
-  // TODO: HERE
+  // removes all selected nodes
   $("#remove_node").on('click', function(e){
-
     let new_coords=[];
+    // make new array with the not selected nodes to keep
     for (let i=0; i<coords.length;i++){
       if (clicked_nodes.indexOf(i) === -1){
         new_coords.push(coords[i]);
@@ -323,41 +323,63 @@ $(document).ready(function(){
     select_nodes=false;
     $("#remove_node").css("visibility","hidden");
 
-
-
-
+    // if all polygons' nodes were selected  - act like delete polygon button
     if (coords.length==0) {
-      if (polygons.length > 1) {
-        polygons.splice(current_polygon_index, 1);
+      //remove polygon from polygons array
+      polygons.splice(current_polygon_index, 1);
+
+      // after removing move back to the first polygon
+      if (polygons.length > 0) {
+        current_polygon_index = 0;
+        coords = polygons[current_polygon_index];
       }
       else{
-        polygons[0]=coords;
+        resetAll();
       }
-      current_polygon_index = 0;
-      coords = polygons[current_polygon_index];
+    }
+    else{
+      // update the current polygon to be without selected nodes
+      polygons[current_polygon_index]=coords;
+    }
+    drawPolygons();
+
+  });
+
+  // Edge color
+  $("#my-pen-color").on("change", function() {
+    color_pen = $(this).val();
+  });
+  // Edge width
+  $("#my-pen-width").on("change", function() {
+    document.getElementById("my-pen-width").setAttribute("title", this.value);
+    edge_width = $(this).val();
+  });
+
+  //Change color button - changes the color of selected polygon
+  $("#Change_color").on("click", function() {
+    let new_color=color_pen;
+    // updates third item in every co-ordinate
+    for (let i = 0; i < coords.length; i++) {
+      coords[i][2]=new_color;
     }
     polygons[current_polygon_index]=coords;
-
-
-
     drawPolygons();
 
   });
 
-  $("#reset_zoom").click(function() {
-    document.getElementById('my-range').value = 0;
-    zoom_activated=false;
-    zoomMouseDown = false;
+  //Change width button - changes the width of selected polygon
+  $("#Change_width").on("click", function() {
+    polygons_line_width[current_polygon_index]=edge_width;
     drawPolygons();
+
   });
 
-
-  //zoom option
+  //Zoom Slider
   $("#my-range").on("change", function() {
-    const rangeInput = document.getElementById("my-range");
-    rangeInput.setAttribute("title", this.value);
+    document.getElementById("my-range").setAttribute("title", this.value);
     c.clearRect(0,0,canvas_width,canvas_height);
     scale=$(this).val();
+    // checks if slider's value is changed
     if (scale!=1){
       zoom_activated=true;
       c.save();
@@ -366,48 +388,32 @@ $(document).ready(function(){
       drawPolygons();
       c.restore();
     }
+    // zoom slider went back to normal size
     else {
       zoom_activated=false;
       zoomMouseDown = false;
       drawPolygons();
     }
-
-
   });
 
-
-  //pen color option
-  $("#my-pen-color").on("change", function() {
-    color_pen = $(this).val();
-  });
-
-  $("#my-pen-width").on("change", function() {
-    const pen_width = document.getElementById("my-pen-width");
-    pen_width.setAttribute("title", this.value);
-    edge_width = $(this).val();
-
-  });
-
-  $("#Change_color").on("click", function() {
-    let new_color=color_pen;
-    for (let i = 0; i < coords.length; i++) {
-      coords[i][2]=new_color;
-    }
-    polygons[current_polygon_index]=coords;
+  // Zoom reset button
+  $("#reset_zoom").click(function() {
+    document.getElementById('my-range').value = 0;
+    zoom_activated=false;
+    zoomMouseDown = false;
     drawPolygons();
-
   });
-  $("#Change_width").on("click", function() {
-    polygons_line_width[current_polygon_index]=edge_width;
-    drawPolygons();
-
-  });
-
-
 
   // exports polygons array into JSON file
   $("#export_json").click(function() {
-    const originalData = JSON.parse(JSON.stringify(polygons));
+    let polygons_data=[];
+    for (let i=0;i<polygons.length;i++){
+      let coords_data={Width: 0,Coordinates: []};
+      coords_data.Width=polygons_line_width[i];
+      coords_data.Coordinates=polygons[i];
+      polygons_data.push(coords_data);
+    }
+    const originalData = JSON.parse(JSON.stringify(polygons_data));
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(originalData, null, 2)], {
       type: "application/json"
@@ -416,7 +422,6 @@ $(document).ready(function(){
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-
     alert("Polygons data was exported to JSON file successfully!")
   });
 
