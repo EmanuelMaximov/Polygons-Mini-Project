@@ -29,6 +29,10 @@ let clicked_nodes=[];
 let select_nodes=false;
 let drag_start=[0,0];
 let drag_polygon=false;
+let boundingRectangle={ top:[0,0],
+                        bottom: [0,canvas_height],
+                        most_right: [0,0],
+                        most_left: [canvas_width,0]};
 
 
 $(document).ready(function(){
@@ -54,7 +58,7 @@ $(document).ready(function(){
     }
   });
 
-
+  // Mouse move event - for dragging polygon, dragging in zoom mode, and dragging node
   $("#graph").mousemove(function(e) {
     const x = undefined?e.layerX:e.offsetX;
     const y = output(undefined?e.layerY:e.offsetY);
@@ -74,10 +78,7 @@ $(document).ready(function(){
       }
     } else {
       if (edit_mode && !select_nodes) {
-        const x = e.offsetX;
-        const y = canvas_height - e.offsetY;
-        let index = checkOnEdge([x, y], true);
-        if (index != -1 && index == current_polygon_index) {
+        if (checkInBoundingRect(x,y)) {
           $("html, body").css("cursor", "move");
           if (drag_polygon && !clickCheck) {
             // get the current mouse position
@@ -126,7 +127,7 @@ $(document).ready(function(){
       }
     }
   });
-  // -----------------------------------------------------------------
+
   // Left Click event - select polygons' nodes on edit mode
   $("#graph").on('click', function(e){
     const x = e.offsetX;
@@ -144,6 +145,7 @@ $(document).ready(function(){
          }
 
          if (clicked_nodes.length==0){
+           select_nodes=false;
            $("#remove_node").css("visibility","hidden");
          }
          else{
@@ -161,7 +163,7 @@ $(document).ready(function(){
     polygons[current_polygon_index]=coords;
     const x = e.offsetX;
     const y = output(e.offsetY);
-    let index=checkOnEdge([x,y],false);
+    let index=checkOnEdge([x,y]);
 
     if (index!=-1){// When right-clicked on polygon
       edit_mode=true;
@@ -173,6 +175,7 @@ $(document).ready(function(){
     else{// When right-clicked on background
       edit_mode=false;
       select_nodes=false;
+      clicked_nodes=[];
       document.getElementById("v_mode").innerHTML="View-mode";
     }
     drawPolygons();
@@ -307,7 +310,7 @@ $(document).ready(function(){
 
   // Cancel Nodes selection button
   $("#cancel_select_nodes").on('click', function(e){
-    if (edit_mode){
+    if (edit_mode && select_nodes){
       $("#remove_node").css("visibility","hidden");
       select_nodes=false;
       clicked_nodes=[];
@@ -393,6 +396,8 @@ $(document).ready(function(){
       zoom_activated=true;
       edit_mode=false;
       select_nodes=false;
+      clicked_nodes=[];
+      $("#remove_node").css("visibility","hidden");
       document.getElementById("v_mode").innerHTML="View-mode";
       c.save();
       c.translate(translatePos.x, translatePos.y);
@@ -421,7 +426,7 @@ $(document).ready(function(){
     let polygons_data=[];
     for (let i=0;i<polygons.length;i++){
       let coords_data={Width: 0,Coordinates: []};
-      coords_data.Width=polygons_line_width[i];
+      coords_data.Width=parseInt(polygons_line_width[i],10);
       coords_data.Coordinates=polygons[i];
       polygons_data.push(coords_data);
     }
@@ -439,11 +444,12 @@ $(document).ready(function(){
 
   // ---------------------------------------- Auxiliary functions ----------------------------------------
 
-  // reset all flags and Polygons array
+  // reset all flags and Data
   function resetAll(){
     document.getElementById('my-range').value = 0;
     document.getElementById('my-pen-width').value = 0;
     document.getElementById("v_mode").innerHTML="View-mode";
+    $("#remove_node").css("visibility","hidden");
     polygons=[];
     polygons_line_width=[];
     current_polygon_index=-1;
@@ -486,32 +492,42 @@ $(document).ready(function(){
   }
   // draws the dashed bounding rect around the polygon in edit-mode
   function drawBoundingRect() {
-    let top=[0,0];
-    let bottom=[0,canvas_height];
-    let most_right=[0,0];
-    let most_left=[canvas_width,0];
+    boundingRectangle.top=[0,0];
+    boundingRectangle.bottom=[0,canvas_height];
+    boundingRectangle.most_right=[0,0];
+    boundingRectangle.most_left=[canvas_width,0];
 
     //gets the most left,right,top and bottom coordinates of the polygon
     for (let i = 0; i < coords.length; i++) {
-      if (coords[i][1]>top[1]){
-        top=coords[i];
+      if (coords[i][1]> boundingRectangle.top[1]){
+        boundingRectangle.top=coords[i];
       }
-      if (coords[i][1]<bottom[1]){
-        bottom=coords[i];
+      if (coords[i][1]<boundingRectangle.bottom[1]){
+        boundingRectangle.bottom=coords[i];
       }
-      if (coords[i][0]>most_right[0]){
-        most_right=coords[i];
+      if (coords[i][0]>boundingRectangle.most_right[0]){
+        boundingRectangle.most_right=coords[i];
       }
-      if (coords[i][0]<most_left[0]){
-        most_left=coords[i];
+      if (coords[i][0]<boundingRectangle.most_left[0]){
+        boundingRectangle.most_left=coords[i];
       }
     }
     c.save();
     c.strokeStyle='black';
     c.lineWidth=2;
     c.setLineDash([10, 5]);
-    c.strokeRect(most_left[0], output(bottom[1]), most_right[0]-most_left[0], output(top[1])-output(bottom[1]));
+    c.strokeRect(boundingRectangle.most_left[0], output(boundingRectangle.bottom[1]), boundingRectangle.most_right[0]-boundingRectangle.most_left[0], output(boundingRectangle.top[1])-output(boundingRectangle.bottom[1]));
     c.restore();
+  }
+
+  // Check if cursor in Bounding Rect area
+  function checkInBoundingRect(x,y) {
+    if (y>=boundingRectangle.bottom[1] && y<=boundingRectangle.top[1] &&
+      x>=boundingRectangle.most_left[0] && x<=boundingRectangle.most_right[0]){
+      return true
+    }
+    return false
+
   }
 
   // Draw Rects around selected nodes for removal
@@ -527,15 +543,15 @@ $(document).ready(function(){
   }
 
   // Returns the index of the polygon that the mouse hovers on
-  function checkOnEdge(clicked_coord,flag){
+  function checkOnEdge(clicked_coord){
     for (let i = 0; i < polygons.length; i++) {
       for (let j = 0; j < polygons[i].length-1; j++) {
-        if (checkOnLine(polygons[i][j],polygons[i][j+1],clicked_coord,flag)) {
+        if (checkOnLine(polygons[i][j],polygons[i][j+1],clicked_coord)) {
             return i
         }
       }
       // check first and last coords of the polygon (private case of the above)
-      if (checkOnLine(polygons[i][0],polygons[i][polygons[i].length-1],clicked_coord,flag)) {
+      if (checkOnLine(polygons[i][0],polygons[i][polygons[i].length-1],clicked_coord)) {
         return i
       }
     }
@@ -543,32 +559,12 @@ $(document).ready(function(){
   }
 
   // Checks for given edge of the polygon if the mouse hovers on
-  function checkOnLine(a,b,clicked_coord,flag) {
+  function checkOnLine(a,b,clicked_coord) {
     let threshold = 25;
     let ax=a[0];
     let ay=a[1];
     let bx=b[0];
     let by=b[1];
-
-    if (flag){
-      let thresh=5;
-      if (Math.min(ax,bx)==ax){
-        ax=ax+thresh;
-        bx=bx-thresh;
-      }
-      else{
-        ax=ax-thresh;
-        bx=bx+thresh;
-      }
-      if (Math.min(ay,by)==ay){
-        ay=ay+thresh;
-        by=by-thresh;
-      }
-      else{
-        ay=ay-thresh;
-        by=by+thresh;
-      }
-    }
     // Calculate the distance between the mouse click position and the line
     const A = bx-ax;
     const B = ay-clicked_coord[1];
@@ -584,7 +580,6 @@ $(document).ready(function(){
     }
     return false
   }
-
 
   // Display a circle for given co-ordinate and display its values
   function displayCoord(a,width) {

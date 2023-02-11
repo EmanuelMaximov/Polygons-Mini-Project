@@ -87,7 +87,7 @@ body
 .mode {
   float: right;
   text-align: right;
-  text-shadow: 1px 1px 1px #000;
+  text-shadow: 1px 1px 1px #fff;
 }
 
 /*zoom slider*/
