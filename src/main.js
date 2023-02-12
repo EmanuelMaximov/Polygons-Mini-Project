@@ -233,10 +233,11 @@ $(document).ready(function(){
 
     fr.onload = function(ev2) {
       console.dir(ev2);
-      // calls the function to load image on load
-      resetAll();
-      img.onload = load_image;
+      // calls the function to load image on load and previous polygons
+      image_is_inserted=true;
+      img.onload = drawPolygons;
       img.src = ev2.target.result;
+
     };
     fr.readAsDataURL(f);
 
@@ -447,15 +448,12 @@ $(document).ready(function(){
   // reset all flags and Data
   function resetAll(){
     document.getElementById('my-range').value = 0;
-    document.getElementById('my-pen-width').value = 0;
     document.getElementById("v_mode").innerHTML="View-mode";
     $("#remove_node").css("visibility","hidden");
     polygons=[];
     polygons_line_width=[];
     current_polygon_index=-1;
     coords = [];
-    color_pen='black';
-    edge_width=2;
 
     added_polygon=false;
     pointCheck = false;
@@ -476,7 +474,7 @@ $(document).ready(function(){
   }
   // callback function to load image into canvas in the right proportion
   function load_image(){
-    image_is_inserted=true;
+
     let hRatio = canvas_width / img.width    ;
     let vRatio =  canvas_height / img.height  ;
     let ratio  = Math.min ( hRatio, vRatio );
@@ -522,7 +520,7 @@ $(document).ready(function(){
 
   // Check if cursor in Bounding Rect area
   function checkInBoundingRect(x,y) {
-    if (y>=boundingRectangle.bottom[1] && y<=boundingRectangle.top[1] &&
+    if (coords.length!=0 && y>=boundingRectangle.bottom[1] && y<=boundingRectangle.top[1] &&
       x>=boundingRectangle.most_left[0] && x<=boundingRectangle.most_right[0]){
       return true
     }
