@@ -1,27 +1,31 @@
-# PolygonsMiniProject
+# Web-based Polygon Draw and Edit
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.0.4.
 
-## Development server
+## How to run
+Open ‘index.html’ file to run the app
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
 
-## Code scaffolding
+## Description
+There are two main modes for our program, ‘View-mode’ and ‘Edit-mode’. Only in ‘Edit-
+mode’ the user may edit the polygons.
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+Every polygon that is created is automatically in ‘Edit Mode’ and is therefore drawn inside
+dashed rectangle for awareness of users.
 
-## Build
+In order to choose other polygon to edit, just right-click on it. To exit Edit-mode, right-click
+on the background of the canvas.
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+‘Clear polygons’ deletes all polygons, while ‘Clear screen’ deletes all polygons and resets
+canvas’ image.
 
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+### Main Features:
+1. Creating polygons with ‘Add Polygon’ button and assigning its nodes’ coordinates
+2. with double-click on the canvas
+3. Deleting polygon’s selected nodes (if all nodes are selected, polygon is deleted)
+4. Dragging existing node to reshape an existing polygon
+5. Moving the whole polygon when it’s selected by dragging it
+6. Zooming in on canvas
+7. Choosing canvas’ image
+8. Changing polygon’s edges color
+9. Changing polygon’s edges width
+10. Creating an output JSON file containing all polygons data
