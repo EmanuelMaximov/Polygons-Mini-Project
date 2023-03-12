@@ -19,13 +19,12 @@ on the background of the canvas.
 canvas’ image.
 
 ### Main Features:
-1. Creating polygons with ‘Add Polygon’ button and assigning its nodes’ coordinates
-2. with double-click on the canvas
+1. Creating polygons with ‘Add Polygon’ button and assigning its nodes’ coordinate  with double-click on the canvas
+2. Loading Image to the canvas from the computer
 3. Deleting polygon’s selected nodes (if all nodes are selected, polygon is deleted)
 4. Dragging existing node to reshape an existing polygon
 5. Moving the whole polygon when it’s selected by dragging it
 6. Zooming in on canvas
-7. Choosing canvas’ image
-8. Changing polygon’s edges color
-9. Changing polygon’s edges width
-10. Creating an output JSON file containing all polygons data
+7. Changing polygon’s edges color
+8. Changing polygon’s edges width
+9. Creating an output JSON file containing all polygons data
